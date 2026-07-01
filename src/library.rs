@@ -7,6 +7,7 @@
 //! the I/O and coalesces pushes; every rule lives here, pure and tested.
 
 use crate::types::{LibraryItem, Progress};
+use std::cmp::Reverse;
 use std::collections::BTreeMap;
 
 /// Most recent history entries kept per account.
@@ -59,7 +60,7 @@ impl Library {
     }
 
     fn cap_history(&mut self) {
-        self.history.sort_by(|a, b| b.at.cmp(&a.at));
+        self.history.sort_by_key(|it| Reverse(it.at));
         self.history.truncate(HISTORY_CAP);
     }
 
@@ -69,7 +70,7 @@ impl Library {
         }
         let mut pairs: Vec<(String, Progress)> =
             self.progress.iter().map(|(k, v)| (k.clone(), *v)).collect();
-        pairs.sort_by(|a, b| b.1.at.cmp(&a.1.at));
+        pairs.sort_by_key(|p| Reverse(p.1.at));
         pairs.truncate(PROGRESS_CAP);
         self.progress = pairs.into_iter().collect();
     }
@@ -202,7 +203,7 @@ pub fn merge_history(a: &[LibraryItem], b: &[LibraryItem], tomb: &Tombstones) ->
         .into_values()
         .filter(|it| tomb.get(it.id()).map(|&t| t < it.at).unwrap_or(true))
         .collect();
-    out.sort_by(|x, y| y.at.cmp(&x.at));
+    out.sort_by_key(|it| Reverse(it.at));
     out.truncate(HISTORY_CAP);
     out
 }
@@ -223,7 +224,7 @@ pub fn merge_progress(
     }
     if out.len() > PROGRESS_CAP {
         let mut pairs: Vec<(String, Progress)> = out.into_iter().collect();
-        pairs.sort_by(|x, y| y.1.at.cmp(&x.1.at));
+        pairs.sort_by_key(|p| Reverse(p.1.at));
         pairs.truncate(PROGRESS_CAP);
         out = pairs.into_iter().collect();
     }
