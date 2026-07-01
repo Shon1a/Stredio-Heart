@@ -1,0 +1,27 @@
+[package]
+name = "stredio-heart"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.70"
+license = "MIT"
+description = "The reusable heart of STREDIO — device- and version-agnostic domain models and pure logic shared across every client (web, desktop, mobile, TV)."
+repository = "https://github.com/Shon1a/Stredio-Heart"
+readme = "README.md"
+keywords = ["stredio", "addons", "catalog", "core"]
+categories = ["data-structures", "wasm"]
+
+[lib]
+name = "stredio_heart"
+# rlib for native shells (desktop/mobile via FFI); cdylib enables a wasm build for the web shell.
+crate-type = ["rlib", "cdylib"]
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
