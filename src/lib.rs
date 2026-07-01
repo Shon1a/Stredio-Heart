@@ -15,11 +15,13 @@
 //! - [`addon`] — pure helpers for a real add-on: URL normalisation, validation, capabilities.
 //! - [`collection`] — merging a CDN-served official collection over inline defaults.
 //! - [`state`] — per-account install state and cross-device reconciliation.
+//! - [`runtime`] — an Elm-style Model / Msg / update / Effect slice for add-on state.
 //! - [`ffi`] — thin JSON string-in/string-out wrappers for non-Rust shells (web/WASM, mobile).
 
 pub mod addon;
 pub mod collection;
 pub mod ffi;
+pub mod runtime;
 pub mod state;
 pub mod types;
 
@@ -29,6 +31,7 @@ pub use addon::{
     validate_manifest,
 };
 pub use collection::{has_stream, merge_official, safe_icon, MergeReport};
+pub use runtime::{update, Effect, LoadStatus, Model, Msg};
 pub use state::{apply_install_map, install_map, reconcile, InstallMap, SyncDecision};
 pub use types::{
     AddonCollection, AddonDescriptor, AddonManifest, CollectionManifest, CollectionRef, Flags,
