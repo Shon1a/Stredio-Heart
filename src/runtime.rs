@@ -16,7 +16,7 @@ use crate::state::{apply_install_map, install_map, reconcile, InstallMap, SyncDe
 use crate::types::{AddonCollection, AddonDescriptor, CollectionManifest};
 
 /// Where the CDN official-collection load is in its lifecycle.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub enum LoadStatus {
     #[default]
     Idle,
@@ -92,7 +92,7 @@ pub enum Msg {
 
 /// A side-effect to perform. The core returns these; the shell executes them and
 /// dispatches the follow-up [`Msg`]. Effects are plain data — no I/O in here.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
 pub enum Effect {
     /// `GET <cdn>/index.json`, then dispatch [`Msg::OfficialManifestFetched`].
     FetchOfficialManifest,

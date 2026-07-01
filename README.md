@@ -26,11 +26,43 @@ everywhere, instead of being re-implemented (and drifting) per platform.
 
 | Module | Responsibility |
 |--------|----------------|
-| `types` | The shared data model — add-on descriptors, real add-on manifests, collection manifest + payload, flags, sections. |
+| `types` | The shared data model — add-on descriptors, real add-on manifests, collection manifest + payload, poster/library items, progress, flags, sections. |
 | `addon` | Pure helpers for a user-installed add-on: manifest-URL normalisation, base-URL resolution, manifest validation, resource/capability checks. |
 | `collection` | Merging a CDN-served **official add-on collection** over the inline defaults — display-only refinement of known ids, additive-only new cards, neutral-conduit + XSS guards, precise change detection. |
 | `state` | Per-account install state (`id -> installed`) and last-write-wins cross-device reconciliation. |
+| `runtime` | Elm-style **Model / Msg / update / Effect** for add-on state. |
+| `catalog` | Elm-style slice for the **home rows** (catalog / provider / studio rails) — gating + per-row config → visible rows → row/hero fetch effects. |
+| `library` | Elm-style slice for **watch progress + library history** — resume positions, history, tombstones, recency-merge/caps matching the client's `/api/library-state` sync. |
 | `ffi` | Thin JSON string-in/string-out wrappers for non-Rust shells. |
+| `wasm` *(feature)* | JS classes (`AddonRuntime`, `CatalogRuntime`, `LibraryRuntime`) so a browser shell drives the runtimes directly. |
+
+## The Elm-style runtimes
+
+Three slices share one shape — a `Model`, a `Msg` enum, a pure `update(&mut Model, Msg) -> Vec<Effect>`, and `Effect`s the shell runs (fetch / persist / push / repaint). State flows one way; the core never touches the network or the clock (time enters via a `Msg`). Each is exposed to the browser as a JS class over the `wasm` feature:
+
+```js
+// after wasm-bindgen glue is generated
+import init, { AddonRuntime } from "./stredio_heart.js";
+await init();
+
+const rt = new AddonRuntime(JSON.stringify(INLINE_ADDONS));
+for (const fx of JSON.parse(rt.load_official())) { /* run FetchOfficialManifest… */ }
+// feed results back:
+rt.official_manifest_fetched(manifestJson);      // returns effects JSON
+rt.official_payload_fetched(payloadJson);        // merges; ["Repaint"] iff changed
+rt.toggle_addon("upcoming", Date.now());         // ["PersistInstallState",…,"Repaint"]
+render(JSON.parse(rt.addons_json()));
+```
+
+`CatalogRuntime` and `LibraryRuntime` follow the same call/return-effects pattern.
+
+Build the browser artifact:
+
+```bash
+rustup target add wasm32-unknown-unknown
+cargo build --release --target wasm32-unknown-unknown --features wasm
+wasm-bindgen target/wasm32-unknown-unknown/release/stredio_heart.wasm --out-dir web --target web
+```
 
 ## The official-addons connection
 
@@ -76,10 +108,13 @@ cargo build --release # rlib + cdylib
 
 ## Roadmap
 
-- `catalog` / `meta` item models and paging.
-- Subtitle + stream mapping (the native twin of the client's `mapAddonStream`).
-- Library model (watch progress, favourites) with the same reconcile discipline as `state`.
-- A first-class WASM binding layer behind a `wasm` feature.
+- [x] `runtime` — Elm-style add-on state slice.
+- [x] `catalog` — home-rows slice (`meta` item model, gating, per-row config, row/hero fetch).
+- [x] `library` — watch progress + history + tombstones, recency-merge/caps, `wasm` binding.
+- [x] `wasm` feature — `AddonRuntime` / `CatalogRuntime` / `LibraryRuntime` JS classes.
+- [ ] Subtitle + stream mapping (the native twin of the client's `mapAddonStream`).
+- [ ] Catalog paging + search; per-add-on catalogs from installed community add-ons.
+- [ ] Wire `index.html` to the generated wasm glue (drive a real page from the core).
 
 ## License
 

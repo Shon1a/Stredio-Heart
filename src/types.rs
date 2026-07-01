@@ -205,3 +205,71 @@ pub struct AddonManifest {
     #[serde(default)]
     pub types: Vec<String>,
 }
+
+/// A poster/catalog item — the shape a home row or search result renders.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+pub struct MetaItem {
+    pub id: String,
+    #[serde(default)]
+    pub title: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub poster: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub year: Option<String>,
+    #[serde(rename = "type", default, skip_serializing_if = "Option::is_none")]
+    pub item_type: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub genre: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rating: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ep: Option<String>,
+}
+
+/// A library / history entry — a [`MetaItem`] plus per-user watch bookkeeping.
+/// Matches the flat shape persisted per account (id/title/poster/... + at/key/season/episode).
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+pub struct LibraryItem {
+    #[serde(flatten)]
+    pub meta: MetaItem,
+    /// Stable render key some rows use (usually equal to `meta.id`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub key: Option<String>,
+    /// Last-touched timestamp (ms) — drives recency ordering and merge.
+    #[serde(default)]
+    pub at: u64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub season: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub episode: Option<u32>,
+}
+
+impl LibraryItem {
+    pub fn id(&self) -> &str {
+        &self.meta.id
+    }
+}
+
+/// Resume position for a title (seconds), with the time it was recorded (ms).
+#[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
+pub struct Progress {
+    pub pos: f64,
+    pub dur: f64,
+    pub at: u64,
+}
+
+impl Progress {
+    /// Fraction watched in `[0, 1]` (0 when the duration is unknown).
+    pub fn fraction(&self) -> f64 {
+        if self.dur > 0.0 {
+            (self.pos / self.dur).clamp(0.0, 1.0)
+        } else {
+            0.0
+        }
+    }
+    /// Heuristic "basically finished" cutoff — used to hide finished titles from
+    /// the Continue-Watching row.
+    pub fn is_finished(&self) -> bool {
+        self.fraction() >= 0.9
+    }
+}

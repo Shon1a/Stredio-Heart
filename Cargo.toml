@@ -15,9 +15,15 @@ name = "stredio_heart"
 # rlib for native shells (desktop/mobile via FFI); cdylib enables a wasm build for the web shell.
 crate-type = ["rlib", "cdylib"]
 
+[features]
+default = []
+# Build the browser binding (see src/wasm.rs). Pulls wasm-bindgen only when enabled.
+wasm = ["dep:wasm-bindgen"]
+
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+wasm-bindgen = { version = "0.2", optional = true }
 
 [profile.release]
 opt-level = "z"

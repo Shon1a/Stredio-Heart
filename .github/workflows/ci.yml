@@ -15,11 +15,16 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
       - name: Format
         run: cargo fmt --all -- --check
-      - name: Clippy
+      - name: Clippy (native)
         run: cargo clippy --all-targets -- -D warnings
       - name: Test
-        run: cargo test --all-features
-      - name: Build (release)
+        run: cargo test
+      - name: Build (native release)
         run: cargo build --release
+      - name: Clippy (wasm binding)
+        run: cargo clippy --target wasm32-unknown-unknown --features wasm -- -D warnings
+      - name: Build (wasm binding)
+        run: cargo build --release --target wasm32-unknown-unknown --features wasm
